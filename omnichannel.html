@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Omnichannel - Painel Interativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A dashboard-style Single Page Application (SPA) with a fixed sidebar for navigation. This task-oriented structure allows users to explore key features (Dashboard, Products, Orders, Integrations, Analytics) in a non-linear way, simulating a real-world application experience. This design was chosen for its intuitiveness and ability to make the report's abstract concepts tangible and easy to understand. User interaction is centered around clicking navigation links to display the relevant content section dynamically. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Dashboard KPIs -> Goal: Inform -> Viz/Presentation: Styled HTML cards -> Interaction: Static display -> Justification: Provides a quick, scannable overview of key metrics. -> Method: Tailwind CSS.
+        - Report Info: Sales Growth/Revenue by Channel -> Goal: Compare/Change -> Viz/Presentation: Line and Bar charts -> Interaction: Hover for tooltips -> Justification: Visually represents trends and channel performance effectively. -> Library: Chart.js.
+        - Report Info: Product/Order Management -> Goal: Organize -> Viz/Presentation: Interactive HTML tables -> Interaction: Live search/filter by status -> Justification: Simulates core management tasks and demonstrates centralized control. -> Method: Vanilla JS.
+        - Report Info: Integrations -> Goal: Inform -> Viz/Presentation: Grid of logos/cards -> Interaction: Static display -> Justification: Clearly shows the breadth of platform connectivity. -> Method: Tailwind CSS.
+        - Report Info: Sales Reports -> Goal: Analyze -> Viz/Presentation: Donut chart -> Interaction: Hover for details, filter dropdown -> Justification: Allows for deeper data exploration and demonstrates analytical capabilities. -> Library: Chart.js.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4;
+            color: #4a4a4a;
+        }
+        .sidebar-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 12px;
+        }
+        .nav-link.active {
+            background-color: #eaddd7;
+            color: #5c3c2a;
+            font-weight: 600;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .kpi-card {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Estilos específicos para a galeria de imagens */
+        .image-gallery-item {
+            position: relative;
+            cursor: grab;
+            transition: transform 0.2s;
+            touch-action: none; /* Previne o touch de fazer o scroll da página */
+        }
+        .image-gallery-item.dragging {
+            opacity: 0.5;
+            transform: scale(1.05);
+        }
+        .image-gallery-item:active {
+            cursor: grabbing;
+        }
+        .image-gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0.5rem;
+        }
+        .image-gallery-item .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            padding: 4px;
+            cursor: pointer;
+            z-index: 10;
+        }
+    </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="flex h-screen">
+
+    <aside class="w-64 bg-[#ece7e2] text-[#5c3c2a] p-4 flex-shrink-0 flex flex-col">
+        <div class="text-2xl font-bold mb-8 text-center">Omni<span class="text-[#8c6d5e]">Dash</span></div>
+        <nav class="flex flex-col space-y-2">
+            <a href="#dashboard" class="nav-link active flex items-center py-3 px-4 rounded-lg transition-colors duration-200 hover:bg-[#eaddd7]">
+                <span class="sidebar-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+                </span>
+                Dashboard
+            </a>
+            <a href="#products" class="nav-link flex items-center py-3 px-4 rounded-lg transition-colors duration-200 hover:bg-[#eaddd7]">
+                <span class="sidebar-icon">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                </span>
+                Produtos
+            </a>
+            <a href="#orders" class="nav-link flex items-center py-3 px-4 rounded-lg transition-colors duration-200 hover:bg-[#eaddd7]">
+                <span class="sidebar-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                </span>
+                Pedidos
+            </a>
+            <a href="#stock" class="nav-link flex items-center py-3 px-4 rounded-lg transition-colors duration-200 hover:bg-[#eaddd7]">
+                <span class="sidebar-icon">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </span>
+                Estoque
+            </a>
+            <a href="#order_photos" class="nav-link flex items-center py-3 px-4 rounded-lg transition-colors duration-200 hover:bg-[#eaddd7]">
+                <span class="sidebar-icon">
+                    <i class="fa-solid fa-image"></i>
+                </span>
+                Fotos dos Pedidos
+            </a>
+            <a href="#integrations" class="nav-link flex items-center py-3 px-4 rounded-lg transition-colors duration-200 hover:bg-[#eaddd7]">
+                <span class="sidebar-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+                </span>
+                Integrações
+            </a>
+            <a href="#analytics" class="nav-link flex items-center py-3 px-4 rounded-lg transition-colors duration-200 hover:bg-[#eaddd7]">
+                <span class="sidebar-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+                </span>
+                Análises
+            </a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-6 md:p-10 overflow-y-auto relative">
+        
+        <section id="dashboard" class="content-section">
+            <h1 class="text-3xl font-bold text-[#5c3c2a] mb-2">Dashboard Principal</h1>
+            <p class="text-gray-600 mb-8">Esta é a visão geral do seu negócio em todos os canais de venda. Acompanhe os principais indicadores de desempenho de forma rápida e consolidada.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="kpi-card">
+                    <h3 class="text-gray-500 text-sm font-medium">Vendas Totais (mês)</h3>
+                    <p class="text-3xl font-semibold text-[#5c3c2a]">R$99.580,00</p>
+                    <p class="text-green-500 text-sm mt-1">+12.5% vs mês anterior</p>
+                </div>
+                <div class="kpi-card">
+                    <h3 class="text-gray-500 text-sm font-medium">Pedidos Pendentes</h3>
+                    <p class="text-3xl font-semibold text-[#5c3c2a]">32</p>
+                    <p class="text-gray-500 text-sm mt-1">Prontos para envio</p>
+                </div>
+                <div class="kpi-card">
+                    <h3 class="text-gray-500 text-sm font-medium">Ticket Médio</h3>
+                    <p class="text-3xl font-semibold text-[#5c3c2a]">R$ 312,50</p>
+                    <p class="text-red-500 text-sm mt-1">-2.1% vs mês anterior</p>
+                </div>
+                 <div class="kpi-card">
+                    <h3 class="text-gray-500 text-sm font-medium">Novos Clientes</h3>
+                    <p class="text-3xl font-semibold text-[#5c3c2a]">189</p>
+                    <p class="text-green-500 text-sm mt-1">+8% vs mês anterior</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg border border-gray-200">
+                    <h2 class="text-xl font-semibold mb-4 text-[#5c3c2a]">Receita por Canal</h2>
+                    <div class="chart-container">
+                        <canvas id="revenueByChannelChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg border border-gray-200">
+                    <h2 class="text-xl font-semibold mb-4 text-[#5c3c2a]">Crescimento de Vendas (Últimos 6 meses)</h2>
+                    <div class="chart-container">
+                        <canvas id="salesGrowthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="products" class="content-section hidden">
+            <h1 class="text-3xl font-bold text-[#5c3c2a] mb-2">Gerenciamento de Produtos</h1>
+            <p class="text-gray-600 mb-8">Cadastre e gerencie seus produtos em um único lugar. As alterações de estoque, preço e descrição são sincronizadas automaticamente com todos os canais de venda conectados.</p>
+            
+            <div class="bg-white p-6 rounded-lg border border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <input type="text" id="productSearch" placeholder="Buscar produto por nome..." class="w-1/3 p-2 border rounded-md focus:ring-2 focus:ring-[#eaddd7] focus:border-[#5c3c2a]">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="p-3 font-semibold">Produto</th>
+                                <th class="p-3 font-semibold">Preço</th>
+                                <th class="p-3 font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Floating action button to open modal -->
+            <button id="openModalBtn" class="fixed bottom-8 right-8 bg-[#5c3c2a] text-white p-4 rounded-full shadow-lg hover:bg-[#8c6d5e] transition-colors flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M11.25 11.25H9.75v-1.5h1.5v1.5ZM12 11.25v-1.5h1.5v1.5H12ZM13.5 11.25v-1.5h1.5v1.5h-1.5ZM15 11.25v-1.5h1.5v1.5H15ZM16.5 11.25v-1.5h1.5v1.5h-1.5ZM11.25 12.75H9.75v-1.5h1.5v1.5ZM12 12.75v-1.5h1.5v1.5H12ZM13.5 12.75v-1.5h1.5v1.5h-1.5ZM15 12.75v-1.5h1.5v1.5H15ZM16.5 12.75v-1.5h1.5v1.5h-1.5ZM11.25 14.25H9.75v-1.5h1.5v1.5ZM12 14.25v-1.5h1.5v1.5H12ZM13.5 14.25v-1.5h1.5v1.5h-1.5ZM15 14.25v-1.5h1.5v1.5H15ZM16.5 14.25v-1.5h1.5v1.5h-1.5ZM11.25 15.75H9.75v-1.5h1.5v1.5ZM12 15.75v-1.5h1.5v1.5H12ZM13.5 15.75v-1.5h1.5v1.5h-1.5ZM15 15.75v-1.5h1.5v1.5H15ZM16.5 15.75v-1.5h1.5v1.5h-1.5ZM18.75 3.75h-1.5a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5ZM9 3.75H7.5a.75.75 0 000 1.5H9a.75.75 0 000-1.5ZM2.25 6h2.25a.75.75 0 010 1.5H2.25a.75.75 0 010-1.5zM2.25 9h2.25a.75.75 0 010 1.5H2.25a.75.75 0 010-1.5zM2.25 12h2.25a.75.75 0 010 1.5H2.25a.75.75 0 010-1.5zM2.25 15h2.25a.75.75 0 010 1.5H2.25a.75.75 0 010-1.5zM2.25 18h2.25a.75.75 0 010 1.5H2.25a.75.75 0 010-1.5zM15 18.75h-1.5a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5zM20.25 6h1.5a.75.75 0 000-1.5h-1.5a.75.75 0 000 1.5zM20.25 9h1.5a.75.75 0 000-1.5h-1.5a.75.75 0 000 1.5zM20.25 12h1.5a.75.75 0 000-1.5h-1.5a.75.75 0 000 1.5zM20.25 15h1.5a.75.75 0 000-1.5h-1.5a.75.75 0 000 1.5zM20.25 18h1.5a.75.75 0 000-1.5h-1.5a.75.75 0 000 1.5zM18.75 1.5a2.25 2.25 0 00-2.25 2.25V6a2.25 2.25 0 002.25 2.25h1.5a2.25 2.25 0 002.25-2.25V3.75a2.25 2.25 0 00-2.25-2.25h-1.5zM3.75 1.5A2.25 2.25 0 001.5 3.75v1.5A2.25 2.25 0 003.75 7.5h1.5A2.25 2.25 0 007.5 5.25v-1.5A2.25 2.25 0 005.25 1.5h-1.5zM3.75 18.75v-1.5A2.25 2.25 0 001.5 15v1.5A2.25 2.25 0 003.75 18.75h1.5a2.25 2.25 0 002.25-2.25V15a2.25 2.25 0 00-2.25-2.25h-1.5A2.25 2.25 0 001.5 15v1.5A2.25 2.25 0 003.75 18.75h1.5zM18.75 18.75A2.25 2.25 0 0021 16.5v-1.5A2.25 2.25 0 0018.75 12h-1.5A2.25 2.25 0 0015 14.25v1.5A2.25 2.25 0 0017.25 18.75h1.5z" /><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 9a.75.75 0 00-1.5 0v2.25H9a.75.75 0 000 1.5h2.25V15a.75.75 0 001.5 0v-2.25H15a.75.75 0 000-1.5h-2.25V9z" clip-rule="evenodd" /></svg>
+                <span>Novo Produto</span>
+            </button>
+        </section>
+
+        <section id="orders" class="content-section hidden">
+            <h1 class="text-3xl font-bold text-[#5c3c2a] mb-2">Gestão de Pedidos Integrada</h1>
+            <p class="text-gray-600 mb-8">Visualize e processe todos os pedidos de todos os canais em uma única tela. Simplifique a emissão de notas fiscais e a geração de etiquetas de envio.</p>
+            <div class="bg-white p-6 rounded-lg border border-gray-200">
+                <div class="flex items-center space-x-4 mb-4">
+                    <label for="orderStatusFilter" class="font-medium">Filtrar por status:</label>
+                    <select id="orderStatusFilter" class="p-2 border rounded-md focus:ring-2 focus:ring-[#eaddd7] focus:border-[#5c3c2a]">
+                        <option value="all">Todos</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Pago">Pago</option>
+                        <option value="Enviado">Enviado</option>
+                        <option value="Entregue">Entregue</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+                 <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="p-3 font-semibold">Pedido</th>
+                                <th class="p-3 font-semibold">Cliente</th>
+                                <th class="p-3 font-semibold">Data</th>
+                                <th class="p-3 font-semibold">Canal</th>
+                                <th class="p-3 font-semibold">Total</th>
+                                <th class="p-3 font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- NEW SECTION: STOCK MANAGEMENT -->
+        <section id="stock" class="content-section hidden">
+            <h1 class="text-3xl font-bold text-[#5c3c2a] mb-2">Gerenciamento de Estoque</h1>
+            <p class="text-gray-600 mb-8">Defina o estoque total de um produto e controle a quantidade a ser sincronizada com cada canal de venda.</p>
+            <div class="bg-white p-6 rounded-lg border border-gray-200">
+                <div class="mb-6">
+                    <label for="totalStockInput" class="block text-sm font-medium text-gray-700">Estoque Total</label>
+                    <input type="number" id="totalStockInput" name="totalStock" value="100" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#5c3c2a] focus:ring focus:ring-[#eaddd7] focus:ring-opacity-50" required>
+                    <p class="text-sm text-gray-500 mt-1">Total de unidades disponíveis para distribuição. <span id="remainingStock" class="font-medium text-[#5c3c2a]">100</span> restantes.</p>
+                </div>
+        
+                <h2 class="text-xl font-semibold mb-4 text-[#5c3c2a]">Sincronização por Canal</h2>
+                <div id="channelSyncList" class="space-y-4">
+                    <!-- Channels will be dynamically added here -->
+                </div>
+                
+                <div class="pt-6">
+                    <button id="saveStockConfig" class="w-full bg-[#5c3c2a] text-white py-2 px-4 rounded-md hover:bg-[#8c6d5e] transition-colors">Salvar Configuração</button>
+                </div>
+            </div>
+        </section>
+        <!-- END NEW SECTION -->
+
+        <section id="order_photos" class="content-section hidden">
+            <h1 class="text-3xl font-bold text-[#5c3c2a] mb-2">Fotos dos Pedidos</h1>
+            <p class="text-gray-600 mb-8">Gerencie a galeria de fotos dos seus pedidos. Arraste e solte para reordenar, ou clique no "X" para remover uma imagem.</p>
+            
+            <div class="bg-white p-6 rounded-lg border border-gray-200">
+                <!-- Área para upload de arquivos, com estilo de "arrastar e soltar" -->
+                <div id="drop-area" class="border-2 border-dashed border-gray-300 p-8 rounded-lg text-center cursor-pointer transition-colors hover:border-[#5c3c2a] mb-6">
+                    <input type="file" id="file-input" multiple accept="image/*" class="hidden">
+                    <label for="file-input" class="text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mx-auto mb-2 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        </svg>
+                        <span class="font-medium text-lg">Clique para fazer upload</span>
+                        <p class="text-sm">ou arraste e solte as imagens aqui.</p>
+                    </label>
+                </div>
+
+                <!-- Galeria de imagens com suporte a drag-and-drop -->
+                <div id="image-gallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" draggable="true">
+                    <!-- As imagens serão adicionadas dinamicamente aqui -->
+                </div>
+            </div>
+        </section>
+
+        <section id="integrations" class="content-section hidden">
+            <h1 class="text-3xl font-bold text-[#5c3c2a] mb-2">Conexão com Canais de Venda</h1>
+            <p class="text-gray-600 mb-8">Conecte sua loja aos principais marketplaces, plataformas de e-commerce e redes sociais com poucos cliques para expandir seu alcance e aumentar suas vendas.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-lg border border-gray-200 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/FF9900/FFFFFF?text=ML" class="rounded-full mr-4" alt="Mercado Livre">
+                        <span class="font-semibold text-lg">Mercado Livre</span>
+                    </div>
+                    <span class="text-sm font-medium text-green-600 bg-green-100 py-1 px-3 rounded-full">Conectado</span>
+                </div>
+                <div class="bg-white p-6 rounded-lg border border-gray-200 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/000000/FFFFFF?text=AZ" class="rounded-full mr-4" alt="Amazon">
+                        <span class="font-semibold text-lg">Amazon</span>
+                    </div>
+                    <span class="text-sm font-medium text-green-600 bg-green-100 py-1 px-3 rounded-full">Conectado</span>
+                </div>
+                 <div class="bg-white p-6 rounded-lg border border-gray-200 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/92D050/FFFFFF?text=SP" class="rounded-full mr-4" alt="Shopify">
+                        <span class="font-semibold text-lg">Shopify</span>
+                    </div>
+                    <span class="text-sm font-medium text-green-600 bg-green-100 py-1 px-3 rounded-full">Conectado</span>
+                </div>
+                <div class="bg-white p-6 rounded-lg border border-gray-200 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/EE4D2D/FFFFFF?text=SH" class="rounded-full mr-4" alt="Shopee">
+                        <button class="text-sm font-medium text-blue-600 bg-blue-100 py-1 px-3 rounded-full hover:bg-blue-200">Conectar</button>
+                </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg border border-gray-200 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/E4405F/FFFFFF?text=IG" class="rounded-full mr-4" alt="Instagram">
+                        <span class="font-semibold text-lg">Instagram Shopping</span>
+                    </div>
+                    <span class="text-sm font-medium text-green-600 bg-green-100 py-1 px-3 rounded-full">Conectado</span>
+                </div>
+                <div class="bg-white p-6 rounded-lg border border-gray-200 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/0078D4/FFFFFF?text=MG" class="rounded-full mr-4" alt="Magalu">
+                        <button class="text-sm font-medium text-blue-600 bg-blue-100 py-1 px-3 rounded-full hover:bg-blue-200">Conectar</button>
+                </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="analytics" class="content-section hidden">
+            <h1 class="text-3xl font-bold text-[#5c3c2a] mb-2">Análises e Relatórios</h1>
+            <p class="text-gray-600 mb-8">Acesse dados detalhados para tomar decisões de negócio mais inteligentes. Compare o desempenho de canais, produtos e categorias para identificar oportunidades.</p>
+            <div class="bg-white p-6 rounded-lg border border-gray-200">
+                <h2 class="text-xl font-semibold mb-4 text-[#5c3c2a]">Desempenho de Produtos por Categoria</h2>
+                <div class="chart-container" style="max-width: 400px; height: 400px; max-height: 50vh;">
+                    <canvas id="productCategoryChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <!-- Modal para adicionar novo produto -->
+    <div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-full max-w-lg relative">
+            <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h2 class="text-2xl font-semibold mb-4 text-[#5c3c2a]">Adicionar Novo Produto</h2>
+            <form id="addProductForm" class="space-y-4">
+                <div>
+                    <label for="productName" class="block text-sm font-medium text-gray-700">Nome do Produto</label>
+                    <input type="text" id="productName" name="productName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#5c3c2a] focus:ring focus:ring-[#eaddd7] focus:ring-opacity-50" required>
+                </div>
+                <div>
+                    <label for="productDescription" class="block text-sm font-medium text-gray-700">Descrição</label>
+                    <textarea id="productDescription" name="productDescription" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#5c3c2a] focus:ring focus:ring-[#eaddd7] focus:ring-opacity-50"></textarea>
+                </div>
+                <div>
+                    <label for="productPrice" class="block text-sm font-medium text-gray-700">Preço</label>
+                    <input type="number" id="productPrice" name="productPrice" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#5c3c2a] focus:ring focus:ring-[#eaddd7] focus:ring-opacity-50" required>
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-[#5c3c2a] text-white py-2 px-4 rounded-md hover:bg-[#8c6d5e] transition-colors">Salvar Produto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const productTableBody = document.getElementById('productTableBody');
+            const productSearch = document.getElementById('productSearch');
+            const orderTableBody = document.getElementById('orderTableBody');
+            const orderStatusFilter = document.getElementById('orderStatusFilter');
+            const productModal = document.getElementById('productModal');
+            const openModalBtn = document.getElementById('openModalBtn');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const addProductForm = document.getElementById('addProductForm');
+            
+            // Elementos para a nova galeria de fotos
+            const dropArea = document.getElementById('drop-area');
+            const fileInput = document.getElementById('file-input');
+            const imageGallery = document.getElementById('image-gallery');
+
+            // Elementos da nova seção de estoque
+            const totalStockInput = document.getElementById('totalStockInput');
+            const remainingStockSpan = document.getElementById('remainingStock');
+            const channelSyncList = document.getElementById('channelSyncList');
+            
+            let draggedItem = null;
+
+            function showSection(hash) {
+                contentSections.forEach(section => {
+                    if ('#' + section.id === hash) {
+                        section.classList.remove('hidden');
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                });
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === hash) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href');
+                    window.location.hash = targetId;
+                });
+            });
+            
+            window.addEventListener('hashchange', () => {
+                const hash = window.location.hash || '#dashboard';
+                showSection(hash);
+            });
+
+            const initialHash = window.location.hash || '#dashboard';
+            showSection(initialHash);
+
+            const mockProducts = [
+                { name: 'Smartphone Pro X', sku: 'SPX-001', description: 'Última geração, câmera de 108 MP e bateria de longa duração.', price: 3499.90, stock: 150, status: 'Ativo' },
+                { name: 'Fone de Ouvido BT', sku: 'FBT-002', description: 'Sem fio, com cancelamento de ruído e áudio de alta fidelidade.', price: 299.00, stock: 320, status: 'Ativo' },
+                { name: 'Smartwatch Fit 2', sku: 'SWF-003', description: 'Monitora atividades físicas, batimentos cardíacos e notificações do celular.', price: 799.90, stock: 85, status: 'Ativo' },
+                { name: 'Notebook UltraSlim', sku: 'NUS-004', description: 'Design elegante, processador i7 e 16GB de RAM.', price: 5999.00, stock: 40, status: 'Ativo' },
+                { name: 'Câmera DSLR 4K', sku: 'CDS-005', description: 'Captura vídeos em 4K e fotos de alta resolução, ideal para profissionais.', price: 4500.00, stock: 0, status: 'Inativo' },
+                { name: 'Tablet 10 Polegadas', sku: 'TAB-006', description: 'Tela de alta definição, ideal para trabalho ou entretenimento.', price: 1250.00, stock: 110, status: 'Ativo' },
+            ];
+            
+            const mockOrders = [
+                { id: '#10524', customer: 'Ana Silva', date: '25/08/2025', channel: 'Mercado Livre', total: 'R$ 312,50', status: 'Enviado' },
+                { id: '#10523', customer: 'Bruno Costa', date: '25/08/2025', channel: 'Shopify', total: 'R$ 89,90', status: 'Entregue' },
+                { id: '#10522', customer: 'Carla Dias', date: '24/08/2025', channel: 'Amazon', total: 'R$ 1.250,00', status: 'Pago' },
+                { id: '#10521', customer: 'Daniel Farias', date: '24/08/2025', channel: 'Loja Física', total: 'R$ 150,00', status: 'Entregue' },
+                { id: '#10520', customer: 'Eduarda Lima', date: '23/08/2025', channel: 'Shopify', total: 'R$ 499,00', status: 'Pendente' },
+                { id: '#10519', customer: 'Fábio Melo', date: '23/08/2025', channel: 'Mercado Livre', total: 'R$ 79,00', status: 'Cancelado' },
+            ];
+
+            const mockChannels = [
+                { name: 'Mercado Livre', synced: true, quantity: 50 },
+                { name: 'Shopee', synced: true, quantity: 50 },
+                { name: 'Loja Própria', synced: false, quantity: 0 },
+                { name: 'Amazon', synced: false, quantity: 0 },
+                { name: 'Instagram', synced: true, quantity: 0 },
+            ];
+            
+            function renderProducts(products) {
+                productTableBody.innerHTML = '';
+                products.forEach(p => {
+                    const statusClass = p.status === 'Ativo' ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100';
+                    const row = `
+                        <tr>
+                            <td class="p-3">${p.name}<br><span class="text-xs text-gray-500">${p.description || 'Sem descrição.'}</span></td>
+                            <td class="p-3">R$ ${p.price.toFixed(2).replace('.', ',')}</td>
+                            <td class="p-3"><span class="text-xs font-medium py-1 px-2 rounded-full ${statusClass}">${p.status}</span></td>
+                        </tr>
+                    `;
+                    productTableBody.innerHTML += row;
+                });
+            }
+
+            // Modal logic
+            openModalBtn.addEventListener('click', () => {
+                productModal.classList.remove('hidden');
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                productModal.classList.add('hidden');
+            });
+            
+            productModal.addEventListener('click', (e) => {
+                if (e.target === productModal) {
+                    productModal.classList.add('hidden');
+                }
+            });
+
+            addProductForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const productName = document.getElementById('productName').value;
+                const productDescription = document.getElementById('productDescription').value;
+                const productPrice = parseFloat(document.getElementById('productPrice').value);
+                
+                const newProduct = {
+                    name: productName,
+                    description: productDescription,
+                    price: productPrice,
+                    sku: 'PROD-' + Math.floor(Math.random() * 10000),
+                    stock: Math.floor(Math.random() * 100) + 1,
+                    status: 'Ativo'
+                };
+                
+                mockProducts.unshift(newProduct);
+                renderProducts(mockProducts);
+                addProductForm.reset();
+                productModal.classList.add('hidden'); // Fecha o modal após o envio
+            });
+
+            productSearch.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredProducts = mockProducts.filter(p => p.name.toLowerCase().includes(searchTerm) || (p.description && p.description.toLowerCase().includes(searchTerm)));
+                renderProducts(filteredProducts);
+            });
+
+            function getStatusClass(status) {
+                switch (status) {
+                    case 'Pendente': return 'text-yellow-600 bg-yellow-100';
+                    case 'Pago': return 'text-blue-600 bg-blue-100';
+                    case 'Enviado': return 'text-purple-600 bg-purple-100';
+                    case 'Entregue': return 'text-green-600 bg-green-100';
+                    case 'Cancelado': return 'text-red-600 bg-red-100';
+                    default: return 'text-gray-600 bg-gray-100';
+                }
+            }
+
+            function renderOrders(orders) {
+                orderTableBody.innerHTML = '';
+                orders.forEach(o => {
+                    const row = `
+                        <tr>
+                            <td class="p-3 font-medium text-[#5c3c2a]">${o.id}</td>
+                            <td class="p-3">${o.customer}</td>
+                            <td class="p-3 text-gray-500">${o.date}</td>
+                            <td class="p-3">${o.channel}</td>
+                            <td class="p-3">${o.total}</td>
+                            <td class="p-3"><span class="text-xs font-medium py-1 px-2 rounded-full ${getStatusClass(o.status)}">${o.status}</span></td>
+                        </tr>
+                    `;
+                    orderTableBody.innerHTML += row;
+                });
+            }
+
+            orderStatusFilter.addEventListener('change', (e) => {
+                const status = e.target.value;
+                if (status === 'all') {
+                    renderOrders(mockOrders);
+                } else {
+                    const filteredOrders = mockOrders.filter(o => o.status === status);
+                    renderOrders(filteredOrders);
+                }
+            });
+
+            renderProducts(mockProducts);
+            renderOrders(mockOrders);
+            
+            // Logic for the new "Stock" section
+            function renderChannelSync() {
+                let totalStock = parseInt(totalStockInput.value) || 0;
+                let usedStock = mockChannels.reduce((sum, channel) => sum + channel.quantity, 0);
+
+                const updateRemainingStock = () => {
+                    usedStock = mockChannels.reduce((sum, channel) => sum + channel.quantity, 0);
+                    remainingStockSpan.textContent = Math.max(0, totalStock - usedStock);
+                    
+                    // Update max values for each input field to prevent over-allocation
+                    mockChannels.forEach(channel => {
+                        const inputId = `qty-${channel.name.replace(/\s/g, '')}`;
+                        const inputEl = document.getElementById(inputId);
+                        if (inputEl) {
+                            inputEl.max = totalStock - (usedStock - channel.quantity);
+                        }
+                    });
+                };
+                
+                // Clear the list before rendering
+                channelSyncList.innerHTML = '';
+                
+                mockChannels.forEach(channel => {
+                    const channelDiv = document.createElement('div');
+                    channelDiv.classList.add('flex', 'items-center', 'justify-between', 'bg-gray-50', 'p-4', 'rounded-md');
+
+                    const checkboxId = `sync-${channel.name.replace(/\s/g, '')}`;
+                    const inputId = `qty-${channel.name.replace(/\s/g, '')}`;
+
+                    channelDiv.innerHTML = `
+                        <div class="flex items-center">
+                            <input type="checkbox" id="${checkboxId}" class="h-4 w-4 text-[#5c3c2a] border-gray-300 rounded focus:ring-[#eaddd7]" ${channel.synced ? 'checked' : ''}>
+                            <label for="${checkboxId}" class="ml-2 block text-sm font-medium text-gray-700">${channel.name}</label>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="mr-2 text-sm text-gray-500">Sincronizar:</span>
+                            <input type="number" id="${inputId}" value="${channel.quantity}" min="0" class="w-20 rounded-md border-gray-300 shadow-sm focus:border-[#5c3c2a] focus:ring focus:ring-[#eaddd7] focus:ring-opacity-50 text-right" ${channel.synced ? '' : 'disabled'}>
+                        </div>
+                    `;
+
+                    const checkbox = channelDiv.querySelector(`#${checkboxId}`);
+                    const quantityInput = channelDiv.querySelector(`#${inputId}`);
+
+                    checkbox.addEventListener('change', (e) => {
+                        const isChecked = e.target.checked;
+                        quantityInput.disabled = !isChecked;
+                        if (!isChecked) {
+                            channel.quantity = 0;
+                            quantityInput.value = 0;
+                        } else {
+                             // Re-enable input and set a default or previous value
+                             channel.quantity = parseInt(quantityInput.value) || 0;
+                        }
+                        updateRemainingStock();
+                    });
+
+                    quantityInput.addEventListener('input', () => {
+                        let newQuantity = parseInt(quantityInput.value) || 0;
+                        let maxAllowed = totalStock - (usedStock - channel.quantity);
+                        if (newQuantity > maxAllowed) {
+                            newQuantity = maxAllowed;
+                            quantityInput.value = newQuantity;
+                        }
+                        channel.quantity = newQuantity;
+                        updateRemainingStock();
+                    });
+                    
+                    channelSyncList.appendChild(channelDiv);
+                });
+
+                // Event listener for total stock input
+                totalStockInput.addEventListener('input', () => {
+                    totalStock = parseInt(totalStockInput.value) || 0;
+                    updateRemainingStock();
+                });
+
+                // Initial call to set up the view
+                updateRemainingStock();
+            }
+
+            // Call the render function for the new section
+            renderChannelSync();
+
+            // Chart.js logic (unchanged)
+            const chartOptions = {
+                maintainAspectRatio: false,
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        backgroundColor: '#5c3c2a',
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 12 },
+                        padding: 10,
+                        cornerRadius: 4,
+                        displayColors: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#e0e0e0',
+                            borderDash: [2, 4],
+                        },
+                        ticks: { color: '#888' }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: { color: '#888' }
+                    }
+                }
+            };
+            
+            new Chart(document.getElementById('revenueByChannelChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Shopify', 'Mercado Livre', 'Amazon', 'Loja Física', 'Instagram'],
+                    datasets: [{
+                        label: 'Receita (R$)',
+                        data: [45000, 38000, 22000, 15000, 4580],
+                        backgroundColor: ['#8c6d5e', '#a58a7a', '#c0a99a', '#d9c9bc', '#f1e9e0'],
+                        borderRadius: 4,
+                    }]
+                },
+                options: chartOptions
+            });
+
+            new Chart(document.getElementById('salesGrowthChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'],
+                    datasets: [{
+                        label: 'Vendas (R$)',
+                        data: [85000, 92000, 90000, 105000, 115000, 124580],
+                        borderColor: '#5c3c2a',
+                        backgroundColor: 'rgba(92, 60, 42, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            new Chart(document.getElementById('productCategoryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Eletrônicos', 'Acessórios', 'Vestuário', 'Casa e Cozinha'],
+                    datasets: [{
+                        label: 'Vendas por Categoria',
+                        data: [40, 25, 15, 20],
+                        backgroundColor: ['#5c3c2a', '#a58a7a', '#d9c9bc', '#f8f7f4'],
+                        borderColor: '#ece7e2',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: { y: { display: false }, x: { display: false } }
+                }
+            });
+            
+            // Lógica para a galeria de imagens
+            function handleFiles(files) {
+                // Itera sobre cada arquivo selecionado
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    // Verifica se o arquivo é uma imagem
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        // Quando o arquivo é lido, cria o elemento da galeria
+                        reader.onload = function(e) {
+                            const imgContainer = document.createElement('div');
+                            imgContainer.classList.add('image-gallery-item', 'relative', 'rounded-lg', 'overflow-hidden', 'shadow', 'w-full', 'h-40');
+                            imgContainer.setAttribute('draggable', 'true');
+                            
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.alt = file.name;
+
+                            // Botão para remover a imagem
+                            const removeBtn = document.createElement('button');
+                            removeBtn.classList.add('remove-btn');
+                            removeBtn.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-gray-700">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            `;
+                            removeBtn.onclick = () => {
+                                imgContainer.remove();
+                            };
+
+                            imgContainer.appendChild(img);
+                            imgContainer.appendChild(removeBtn);
+                            imageGallery.appendChild(imgContainer);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            }
+
+            // Lida com a seleção de arquivos através do clique
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+
+            // Lida com a funcionalidade de arrastar e soltar
+            dropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropArea.classList.add('border-blue-500');
+            });
+
+            dropArea.addEventListener('dragleave', () => {
+                dropArea.classList.remove('border-blue-500');
+            });
+
+            dropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropArea.classList.remove('border-blue-500');
+                const files = e.dataTransfer.files;
+                handleFiles(files);
+            });
+            
+            imageGallery.addEventListener('dragstart', (e) => {
+                draggedItem = e.target.closest('.image-gallery-item');
+                setTimeout(() => {
+                    draggedItem.classList.add('dragging');
+                }, 0);
+            });
+
+            imageGallery.addEventListener('dragend', () => {
+                draggedItem.classList.remove('dragging');
+                draggedItem = null;
+            });
+
+            imageGallery.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const targetItem = e.target.closest('.image-gallery-item');
+                if (targetItem && targetItem !== draggedItem) {
+                    const allItems = Array.from(imageGallery.querySelectorAll('.image-gallery-item'));
+                    const draggedIndex = allItems.indexOf(draggedItem);
+                    const targetIndex = allItems.indexOf(targetItem);
+
+                    if (draggedIndex < targetIndex) {
+                        imageGallery.insertBefore(draggedItem, targetItem.nextSibling);
+                    } else {
+                        imageGallery.insertBefore(draggedItem, targetItem);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
